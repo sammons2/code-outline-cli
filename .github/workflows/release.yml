@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           # Use RELEASE_TOKEN if available, otherwise GITHUB_TOKEN
           token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
