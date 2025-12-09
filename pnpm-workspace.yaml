@@ -1,2 +1,8 @@
 packages:
-  - 'packages/*'
+  - packages/*
+
+onlyBuiltDependencies:
+  - esbuild
+  - tree-sitter
+  - tree-sitter-javascript
+  - tree-sitter-typescript

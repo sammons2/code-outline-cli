@@ -1,22 +1,51 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock the CLI components before importing
-vi.mock('./cli-argument-parser.js', () => ({
-  CLIArgumentParser: vi.fn(),
-  CLIArgumentError: class extends Error {
+// Create hoisted mock instances (vitest 4 requirement)
+const {
+  mockArgumentParser,
+  mockFileProcessor,
+  mockOutputHandler,
+  MockCLIArgumentError,
+  MockFileProcessorError,
+} = vi.hoisted(() => ({
+  mockArgumentParser: {
+    parse: vi.fn(),
+    printHelp: vi.fn(),
+  },
+  mockFileProcessor: {
+    findFiles: vi.fn(),
+    processFiles: vi.fn(),
+  },
+  mockOutputHandler: {
+    formatAndOutput: vi.fn(),
+  },
+  MockCLIArgumentError: class extends Error {
     name = 'CLIArgumentError';
   },
-}));
-
-vi.mock('./file-processor.js', () => ({
-  FileProcessor: vi.fn(),
-  FileProcessorError: class extends Error {
+  MockFileProcessorError: class extends Error {
     name = 'FileProcessorError';
   },
 }));
 
+// Mock the CLI components before importing - use function syntax for constructors
+vi.mock('./cli-argument-parser.js', () => ({
+  CLIArgumentParser: vi.fn().mockImplementation(function (this: any) {
+    Object.assign(this, mockArgumentParser);
+  }),
+  CLIArgumentError: MockCLIArgumentError,
+}));
+
+vi.mock('./file-processor.js', () => ({
+  FileProcessor: vi.fn().mockImplementation(function (this: any) {
+    Object.assign(this, mockFileProcessor);
+  }),
+  FileProcessorError: MockFileProcessorError,
+}));
+
 vi.mock('./cli-output-handler.js', () => ({
-  CLIOutputHandler: vi.fn(),
+  CLIOutputHandler: vi.fn().mockImplementation(function (this: any) {
+    Object.assign(this, mockOutputHandler);
+  }),
 }));
 
 // Mock console methods
@@ -32,40 +61,14 @@ import { CLIOutputHandler } from './cli-output-handler.js';
 
 describe('CLIOrchestrator', () => {
   let orchestrator: CLIOrchestrator;
-  let mockArgumentParser: {
-    parse: ReturnType<typeof vi.fn>;
-    printHelp: ReturnType<typeof vi.fn>;
-  };
-  let mockFileProcessor: {
-    findFiles: ReturnType<typeof vi.fn>;
-    processFiles: ReturnType<typeof vi.fn>;
-  };
-  let mockOutputHandler: {
-    formatAndOutput: ReturnType<typeof vi.fn>;
-  };
 
   beforeEach(() => {
-    // Create mock instances
-    mockArgumentParser = {
-      parse: vi.fn(),
-      printHelp: vi.fn(),
-    };
-    mockFileProcessor = {
-      findFiles: vi.fn(),
-      processFiles: vi.fn(),
-    };
-    mockOutputHandler = {
-      formatAndOutput: vi.fn(),
-    };
-
-    // Mock the constructors to return our mocked instances
-    vi.mocked(CLIArgumentParser).mockImplementation(
-      () => mockArgumentParser as any
-    );
-    vi.mocked(FileProcessor).mockImplementation(() => mockFileProcessor as any);
-    vi.mocked(CLIOutputHandler).mockImplementation(
-      () => mockOutputHandler as any
-    );
+    // Reset mock implementations
+    mockArgumentParser.parse.mockReset();
+    mockArgumentParser.printHelp.mockReset();
+    mockFileProcessor.findFiles.mockReset();
+    mockFileProcessor.processFiles.mockReset();
+    mockOutputHandler.formatAndOutput.mockReset();
 
     orchestrator = new CLIOrchestrator();
     vi.clearAllMocks();
@@ -118,7 +121,7 @@ describe('CLIOrchestrator', () => {
 
     it('should handle CLIArgumentError', async () => {
       mockArgumentParser.parse.mockImplementation(() => {
-        throw new CLIArgumentError('Invalid arguments');
+        throw new MockCLIArgumentError('Invalid arguments');
       });
 
       await orchestrator.run();
@@ -142,7 +145,7 @@ describe('CLIOrchestrator', () => {
       });
 
       mockFileProcessor.findFiles.mockImplementation(() => {
-        throw new FileProcessorError('No files found');
+        throw new MockFileProcessorError('No files found');
       });
 
       await orchestrator.run();
@@ -176,7 +179,7 @@ describe('CLIOrchestrator', () => {
 
       mockFileProcessor.findFiles.mockResolvedValue(['/path/file1.js']);
       mockFileProcessor.processFiles.mockImplementation(() => {
-        throw new FileProcessorError('Processing failed');
+        throw new MockFileProcessorError('Processing failed');
       });
 
       await orchestrator.run();
