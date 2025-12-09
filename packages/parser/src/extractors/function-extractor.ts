@@ -76,7 +76,7 @@ export class FunctionExtractor implements BaseExtractor {
     const parent = node.parent;
 
     // Arrow functions assigned to variables
-    if (parent && parent.type === 'variable_declarator') {
+    if (parent?.type === 'variable_declarator') {
       const pattern = parent.child(0);
       if (pattern) {
         if (pattern.type === 'identifier') {
@@ -92,7 +92,7 @@ export class FunctionExtractor implements BaseExtractor {
     }
 
     // Arrow functions as object property values
-    if (parent && parent.type === 'pair') {
+    if (parent?.type === 'pair') {
       const key = parent.child(0);
       if (
         key &&
